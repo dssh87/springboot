@@ -7,11 +7,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.zerock.domain.Board;
+import org.zerock.domain.QBoard;
 import org.zerock.persistence.BoardRepository;
+
+import com.querydsl.core.BooleanBuilder;
 
 import lombok.extern.java.Log;
 
@@ -47,8 +52,52 @@ public class BoardRepositoryTests {
 	public void testList() {
 		Pageable page = PageRequest.of(0, 10);
 		
-		List<Board> list = repo.findByBnoGreaterThanOrderByBnoDesc(0L,page);
+		List<Board> list = repo.findByBnoGreaterThan(0L,page);
 		list.forEach(vo ->log.info(""+vo));
 	}
-
+	
+	@Test
+	public void testList2() {
+		Pageable param = PageRequest.of(0, 20);		
+		
+		Page<Board> result = repo.findByTitleContains("1", param);
+		log.info("result : " + result);
+		log.info("total pages"+ result.getTotalPages());
+	}
+	
+	@Test
+	public void testList3(){
+	
+		Pageable param = PageRequest.of(0,  20);
+		
+		Page<Board> result = repo.getList(param);
+		log.info(""+result);
+	}
+	
+	@Test
+	public void testQuerydsl() {
+		
+		String type = "t";
+		String keyword = "1";
+		
+		BooleanBuilder builder = new BooleanBuilder();
+		
+		QBoard board = QBoard.board;
+		
+		if(type.equals("t")) {
+			builder.and(board.title.like("%" + keyword + "%"));
+		}
+		
+		builder.and(board.bno.gt(0L));
+		
+		/*repo.findAll(builder).iterator().forEachRemaining(vo->log.info(""+vo));*/
+		Pageable page = PageRequest.of(0, 10, Direction.DESC, "bno");
+		
+		Page<Board> list = repo.findAll(builder, page);
+		
+		log.info("TOTAL: " +list.getTotalPages());
+	
+		list.forEach(v -> log.info(" " + v));
+	
+	}
 }
